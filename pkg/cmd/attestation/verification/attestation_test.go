@@ -92,7 +92,7 @@ func TestGetLocalAttestations(t *testing.T) {
 		path := "../test/data/not-found-bundle.json"
 		attestations, err := GetLocalAttestations(path)
 
-		require.ErrorContains(t, err, "bundle could not be loaded from JSON file")
+		require.ErrorContains(t, err, "could not load content from file path")
 		require.Nil(t, attestations)
 	})
 
@@ -100,7 +100,7 @@ func TestGetLocalAttestations(t *testing.T) {
 		path := "../test/data/not-found-bundle.jsonl"
 		attestations, err := GetLocalAttestations(path)
 
-		require.ErrorContains(t, err, "bundles could not be loaded from JSON lines file")
+		require.ErrorContains(t, err, "could not load content from file path")
 		require.Nil(t, attestations)
 	})
 
@@ -157,10 +157,11 @@ func TestFilterAttestations(t *testing.T) {
 		},
 	}
 
-	filtered := FilterAttestations("https://slsa.dev/provenance/v1", attestations)
-
+	filtered, err := api.FilterAttestations("https://slsa.dev/provenance/v1", attestations)
 	require.Len(t, filtered, 1)
+	require.NoError(t, err)
 
-	filtered = FilterAttestations("NonExistentPredicate", attestations)
-	require.Len(t, filtered, 0)
+	filtered, err = api.FilterAttestations("NonExistentPredicate", attestations)
+	require.Nil(t, filtered)
+	require.Error(t, err)
 }

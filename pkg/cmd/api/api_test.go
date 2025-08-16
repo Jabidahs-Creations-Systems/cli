@@ -367,72 +367,6 @@ func Test_NewCmdApi(t *testing.T) {
 			},
 			wantsErr: false,
 		},
-		{
-			name: "request path with container package name containing slashes",
-			cli:  "/user/packages/container/github.com/username/package_name --verbose",
-			wants: ApiOptions{
-				Hostname:            "",
-				RequestMethod:       "GET",
-				RequestMethodPassed: false,
-				RequestPath:         "/user/packages/container/github.com%2Fusername%2Fpackage_name",
-				RequestInputFile:    "",
-				RawFields:           []string(nil),
-				MagicFields:         []string(nil),
-				RequestHeaders:      []string(nil),
-				ShowResponseHeaders: false,
-				Paginate:            false,
-				Silent:              false,
-				CacheTTL:            0,
-				Template:            "",
-				FilterOutput:        "",
-				Verbose:             true,
-			},
-			wantsErr: false,
-		},
-		{
-			name: "request path with container package name containing slashes and restore",
-			cli:  "/user/packages/container/github.com/username/package_name/restore --verbose",
-			wants: ApiOptions{
-				Hostname:            "",
-				RequestMethod:       "GET",
-				RequestMethodPassed: false,
-				RequestPath:         "/user/packages/container/github.com%2Fusername%2Fpackage_name/restore",
-				RequestInputFile:    "",
-				RawFields:           []string(nil),
-				MagicFields:         []string(nil),
-				RequestHeaders:      []string(nil),
-				ShowResponseHeaders: false,
-				Paginate:            false,
-				Silent:              false,
-				CacheTTL:            0,
-				Template:            "",
-				FilterOutput:        "",
-				Verbose:             true,
-			},
-			wantsErr: false,
-		},
-		{
-			name: "request path with container package name containing slashes and versions",
-			cli:  "/user/packages/container/github.com/username/package_name/versions --verbose",
-			wants: ApiOptions{
-				Hostname:            "",
-				RequestMethod:       "GET",
-				RequestMethodPassed: false,
-				RequestPath:         "/user/packages/container/github.com%2Fusername%2Fpackage_name/versions",
-				RequestInputFile:    "",
-				RawFields:           []string(nil),
-				MagicFields:         []string(nil),
-				RequestHeaders:      []string(nil),
-				ShowResponseHeaders: false,
-				Paginate:            false,
-				Silent:              false,
-				CacheTTL:            0,
-				Template:            "",
-				FilterOutput:        "",
-				Verbose:             true,
-			},
-			wantsErr: false,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1424,7 +1358,12 @@ func Test_apiRun_cache(t *testing.T) {
 		Config: func() (gh.Config, error) {
 			return &ghmock.ConfigMock{
 				AuthenticationFunc: func() gh.AuthConfig {
-					return &config.AuthConfig{}
+					cfg := &config.AuthConfig{}
+					// Required because the http client tries to get the active token and otherwise
+					// this goes down to to go-gh config and panics. Pretty bad solution, it would
+					// be better if this were black box.
+					cfg.SetActiveToken("token", "stub")
+					return cfg
 				},
 				// Cached responses are stored in a tempdir that gets automatically cleaned up
 				CacheDirFunc: func() string {

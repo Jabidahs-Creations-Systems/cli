@@ -1,5 +1,6 @@
 name: Discussion Triage
 run-name: ${{ github.event_name == 'issues' && github.event.issue.title || github.event.pull_request.title }}
+permissions: {}
 on:
   issues:
     types:
@@ -11,6 +12,7 @@ env:
   TARGET_REPO: github/cli
 jobs:
   issue:
+    environment: cli-discuss-automation
     runs-on: ubuntu-latest
     if: github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'discuss'
     steps:
@@ -42,6 +44,7 @@ jobs:
 
   pull_request:
     runs-on: ubuntu-latest
+    environment: cli-discuss-automation
     if: github.event_name == 'pull_request_target' && github.event.action == 'labeled' && github.event.label.name == 'discuss'
     steps:
       - name: Create issue based on source pull request

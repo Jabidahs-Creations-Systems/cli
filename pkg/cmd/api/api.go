@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -85,6 +84,13 @@ func NewCmdApi(f *cmdutil.Factory, runF func(*ApiOptions) error) *cobra.Command 
 			Note that in some shells, for example PowerShell, you may need to enclose
 			any value that contains %[1]s{...}%[1]s in quotes to prevent the shell from
 			applying special meaning to curly braces.
+
+			The %[1]s-p/--preview%[1]s flag enables opting into previews, which are feature-flagged,
+			experimental API endpoints or behaviors. The API expects opt-in via the %[1]sAccept%[1]s
+			header with format %[1]sapplication/vnd.github.<preview-name>-preview+json%[1]s and this
+			command facilitates that via %[1]s--preview <preview-name>%[1]s. To send a request for
+			the corsair and scarlet witch previews, you could use %[1]s-p corsair,scarlet-witch%[1]s
+			or %[1]s--preview corsair --preview scarlet-witch%[1]s.
 
 			The default HTTP request method is %[1]sGET%[1]s normally and %[1]sPOST%[1]s if any parameters
 			were added. Override the method with %[1]s--method%[1]s.
@@ -200,15 +206,15 @@ func NewCmdApi(f *cmdutil.Factory, runF func(*ApiOptions) error) *cobra.Command 
 			[.[].data.viewer.repositories.nodes[]] as $r | count(select($r[].isFork))/count($r[])'
 		`),
 		Annotations: map[string]string{
-			"help:environment": heredoc.Doc(`
+			"help:environment": heredoc.Docf(`
 				GH_TOKEN, GITHUB_TOKEN (in order of precedence): an authentication token for
-				<github.com> API requests.
+				%[1]sgithub.com%[1]s API requests.
 
 				GH_ENTERPRISE_TOKEN, GITHUB_ENTERPRISE_TOKEN (in order of precedence): an
 				authentication token for API requests to GitHub Enterprise.
 
-				GH_HOST: make the request to a GitHub host other than <github.com>.
-			`),
+				GH_HOST: make the request to a GitHub host other than %[1]sgithub.com%[1]s.
+			`, "`"),
 		},
 		Args: cobra.ExactArgs(1),
 		PreRun: func(c *cobra.Command, args []string) {
@@ -265,8 +271,6 @@ func NewCmdApi(f *cmdutil.Factory, runF func(*ApiOptions) error) *cobra.Command 
 				return err
 			}
 
-			opts.RequestPath = escapePackageNameInPath(opts.RequestPath)
-
 			if runF != nil {
 				return runF(&opts)
 			}
@@ -279,7 +283,7 @@ func NewCmdApi(f *cmdutil.Factory, runF func(*ApiOptions) error) *cobra.Command 
 	cmd.Flags().StringArrayVarP(&opts.MagicFields, "field", "F", nil, "Add a typed parameter in `key=value` format")
 	cmd.Flags().StringArrayVarP(&opts.RawFields, "raw-field", "f", nil, "Add a string parameter in `key=value` format")
 	cmd.Flags().StringArrayVarP(&opts.RequestHeaders, "header", "H", nil, "Add a HTTP request header in `key:value` format")
-	cmd.Flags().StringSliceVarP(&opts.Previews, "preview", "p", nil, "GitHub API preview `names` to request (without the \"-preview\" suffix)")
+	cmd.Flags().StringSliceVarP(&opts.Previews, "preview", "p", nil, "Opt into GitHub API previews (names should omit '-preview')")
 	cmd.Flags().BoolVarP(&opts.ShowResponseHeaders, "include", "i", false, "Include HTTP response status line and headers in the output")
 	cmd.Flags().BoolVar(&opts.Slurp, "slurp", false, "Use with \"--paginate\" to return an array of all pages of either JSON arrays or objects")
 	cmd.Flags().BoolVar(&opts.Paginate, "paginate", false, "Make additional HTTP requests to fetch all pages of results")
@@ -693,38 +697,4 @@ func previewNamesToMIMETypes(names []string) string {
 		types = append(types, fmt.Sprintf("application/vnd.github.%s-preview", p))
 	}
 	return strings.Join(types, ", ")
-}
-
-// The package name part in the `packages` endpoints may contain slashes and
-// other characters that need to be URL encoded.
-//
-// The `escapePackageNameInPath` function extracts and normalizes package names
-// in the path. The regex `pathWithPackageNameRE` is being used to extract the
-// package name with a capture group named `package`.
-//
-// See https://docs.github.com/en/rest/packages/packages APIs for more details.
-//
-// Here's an example:
-//
-// The package name `orders/cache` needs to be URL encoded because it contains
-// a slash `/`. The `escapePackageNameInPath` function will extract the
-// `orders/cache` part, perform the URL encoding, and return the normalized API
-// endpoint with `%2F` replacing the slash `/` in the package name part only.
-//
-// - Package name: `orders/cache`
-// - API endpoint: `/users/USER/packages/container/orders/cache`
-// - Normalized:   `/users/USER/packages/container/orders%2Fcache`
-
-var pathWithPackageNameRE = regexp.MustCompile(`^\/(?:orgs|user|users)(?:\/.*)?\/packages\/(?:npm|maven|rubygems|docker|nuget|container)\/(?<package>.*?)(?:\/(?:restore|versions)|$)`)
-
-func escapePackageNameInPath(path string) string {
-	matches := pathWithPackageNameRE.FindStringSubmatch(path)
-	if len(matches) > 0 {
-		i := pathWithPackageNameRE.SubexpIndex("package")
-		packageName := matches[i]
-		if packageName != "" {
-			return strings.Replace(path, packageName, url.QueryEscape(packageName), 1)
-		}
-	}
-	return path
 }

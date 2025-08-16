@@ -1,5 +1,9 @@
 name: Unit and Integration Tests
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
 
 permissions:
   contents: read
@@ -14,7 +18,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -41,7 +45,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Go
         uses: actions/setup-go@v5

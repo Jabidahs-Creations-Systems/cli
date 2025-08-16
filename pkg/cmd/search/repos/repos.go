@@ -38,7 +38,7 @@ func NewCmdRepos(f *cmdutil.Factory, runF func(*ReposOptions) error) *cobra.Comm
 	cmd := &cobra.Command{
 		Use:   "repos [<query>]",
 		Short: "Search for repositories",
-		Long: heredoc.Doc(`
+		Long: heredoc.Docf(`
 			Search for repositories on GitHub.
 
 			The command supports constructing queries using the GitHub search syntax,
@@ -46,7 +46,9 @@ func NewCmdRepos(f *cmdutil.Factory, runF func(*ReposOptions) error) *cobra.Comm
 
 			GitHub search syntax is documented at:
 			<https://docs.github.com/search-github/searching-on-github/searching-for-repositories>
-		`),
+
+			For more information on handling search queries containing a hyphen, run %[1]sgh search --help%[1]s.
+		`, "`"),
 		Example: heredoc.Doc(`
 			# Search repositories matching set of keywords "cli" and "shell"
 			$ gh search repos cli shell
@@ -171,14 +173,14 @@ func displayResults(io *iostreams.IOStreams, now time.Time, results search.Repos
 			tags = append(tags, "archived")
 		}
 		info := strings.Join(tags, ", ")
-		infoColor := cs.Gray
+		infoColor := cs.Muted
 		if repo.IsPrivate {
 			infoColor = cs.Yellow
 		}
 		tp.AddField(repo.FullName, tableprinter.WithColor(cs.Bold))
 		tp.AddField(text.RemoveExcessiveWhitespace(repo.Description))
 		tp.AddField(info, tableprinter.WithColor(infoColor))
-		tp.AddTimeField(now, repo.UpdatedAt, cs.Gray)
+		tp.AddTimeField(now, repo.UpdatedAt, cs.Muted)
 		tp.EndRow()
 	}
 	if io.IsStdoutTTY() {

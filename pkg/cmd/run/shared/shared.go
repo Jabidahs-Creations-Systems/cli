@@ -1,7 +1,6 @@
 package shared
 
 import (
-	"archive/zip"
 	"errors"
 	"fmt"
 	"net/http"
@@ -239,7 +238,6 @@ type Step struct {
 	Number      int
 	StartedAt   time.Time `json:"started_at"`
 	CompletedAt time.Time `json:"completed_at"`
-	Log         *zip.File
 }
 
 type Steps []Step
@@ -319,6 +317,10 @@ func IsFailureState(c Conclusion) bool {
 	default:
 		return false
 	}
+}
+
+func IsSkipped(c Conclusion) bool {
+	return c == Skipped
 }
 
 type RunsPayload struct {
@@ -446,6 +448,18 @@ func preloadWorkflowNames(client *api.Client, repo ghrepo.Interface, runs []Run)
 		if _, ok := workflowMap[run.WorkflowID]; !ok {
 			// Look up workflow by ID because it may have been deleted
 			workflow, err := workflowShared.GetWorkflow(client, repo, run.WorkflowID)
+			// If the error is an httpError and it is a 404, this is likely a
+			// organization or enterprise ruleset workflow. The user does not
+			// have permissions to view the details of the workflow, so we cannot
+			// look it up directly without receiving a 404, but it is nonetheless
+			// in the workflow run list. To handle this, we set the workflow name
+			// to an empty string.
+			// Deciding to put this here instead of in GetWorkflow to allow
+			// the caller to decide what a 404 means.
+			if httpErr, ok := err.(api.HTTPError); ok && httpErr.StatusCode == 404 {
+				workflowMap[run.WorkflowID] = ""
+				continue
+			}
 			if err != nil {
 				return err
 			}
@@ -563,7 +577,7 @@ func Symbol(cs *iostreams.ColorScheme, status Status, conclusion Conclusion) (st
 		case Success:
 			return cs.SuccessIconWithColor(noColor), cs.Green
 		case Skipped, Neutral:
-			return "-", cs.Gray
+			return "-", cs.Muted
 		default:
 			return cs.FailureIconWithColor(noColor), cs.Red
 		}
