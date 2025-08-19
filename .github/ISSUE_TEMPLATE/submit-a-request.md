@@ -11,6 +11,8 @@ assignees: ''
 
 A clear and concise description of what the feature or problem is.
 
+**Note:** This repository is for the GitHub CLI (`gh`) command-line tool. Please ensure your request is related to GitHub CLI functionality, not external applications or services.
+
 ### Proposed solution
 
 How will it benefit CLI and its users?
