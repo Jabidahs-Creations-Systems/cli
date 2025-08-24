@@ -2,6 +2,8 @@
 
 `gh` is GitHub on the command line. It brings pull requests, issues, and other GitHub concepts to the terminal next to where you are already working with `git` and your code.
 
+> **Important:** This repository is specifically for the GitHub CLI (`gh`) command-line tool. Issues and requests should be related to GitHub CLI functionality only. For questions about other applications or services, please use the appropriate support channels for those products.
+
 ![screenshot of gh pr status](https://user-images.githubusercontent.com/98482/84171218-327e7a80-aa40-11ea-8cd1-5177fc2d0e72.png)
 
 GitHub CLI is supported for users on GitHub.com, GitHub Enterprise Cloud, and GitHub Enterprise Server 2.20+ with support for macOS, Windows, and Linux.
