@@ -1,0 +1,24 @@
+name: Datadog Synthetic Tests
+
+on:
+  push:
+    branches:
+      - trunk
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  datadog-synthetic-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v5
+
+      - name: Run Datadog Synthetic tests
+        uses: DataDog/synthetics-ci-github-action@v1
+        with:
+          api_key: ${{ secrets.DATADOG_API_KEY }}
+          app_key: ${{ secrets.DATADOG_APP_KEY }}
